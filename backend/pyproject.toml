@@ -1,0 +1,29 @@
+[project]
+name = "cresyler-workspace-backend"
+version = "0.1.0"
+description = "Cresyler Workspace & Study Hub - Modular Monolith Backend (FastAPI + SQLModel + SQLite WAL + LanceDB)"
+readme = "../README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "sqlmodel>=0.0.22",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.5.0",
+    "python-multipart>=0.0.12",
+]
+
+[project.optional-dependencies]
+rag = [
+    "pymupdf4llm>=0.0.17",
+    "lancedb>=0.15.0",
+    "fastembed>=0.4.0",
+]
+dev = [
+    "pytest>=8.3.0",
+    "httpx>=0.27.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
