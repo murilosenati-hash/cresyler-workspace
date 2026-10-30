@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, DailyFocusSummary } from "../../lib/api";
 
 interface GoalsSummary {
   total_tickets: number;
   completed_tickets: number;
   portfolio_cases: number;
   indexed_documents: number;
+  daily_focus?: DailyFocusSummary;
   study_goals: Array<{
     id: number;
     title: string;
@@ -26,7 +27,7 @@ export const GoalsDashboard: React.FC = () => {
   return (
     <section className="p-6 space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-100">Metas de Estudo & Portfólio Vivo</h2>
+        <h2 className="text-lg font-semibold text-zinc-100">Metas Diárias, Estudo & Portfólio Vivo</h2>
         <p className="text-xs text-zinc-400">
           Métricas em tempo real consolidadas do banco SQLite WAL.
         </p>
@@ -34,6 +35,25 @@ export const GoalsDashboard: React.FC = () => {
 
       {summary && (
         <>
+          {summary.daily_focus && (
+            <div className="rounded-xl border border-indigo-500/40 bg-indigo-950/20 p-4 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-xs text-indigo-300 font-semibold uppercase">
+                  Meta Diária Anti-Paralisia ({summary.daily_focus.date})
+                </div>
+                <div className="text-lg font-bold text-zinc-100 mt-0.5">
+                  {summary.daily_focus.focused_minutes_today} / {summary.daily_focus.daily_goal_minutes} minutos focados hoje
+                </div>
+                <div className="text-xs text-zinc-400">
+                  {summary.daily_focus.completed_sprints_today} sprints de 15 min concluídos hoje
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-emerald-400">
+                {summary.daily_focus.progress_pct}%
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
               <div className="text-xs text-zinc-400">Total de Tickets</div>
@@ -60,7 +80,7 @@ export const GoalsDashboard: React.FC = () => {
                 <div>
                   <div className="text-sm font-medium text-zinc-100">{g.title}</div>
                   <div className="text-xs text-zinc-400 mt-1">
-                    🍅 Pomodoros: {g.completed_pomodoros}/{g.target_pomodoros} • 📖 Páginas lidas: {g.pages_read} • 🧠 Flashcards: {g.flashcards_reviewed}
+                    🍅 Sprints Pomodoro: {g.completed_pomodoros}/{g.target_pomodoros} • 📖 Páginas lidas: {g.pages_read} • 🧠 Flashcards revisados: {g.flashcards_reviewed}
                   </div>
                 </div>
               </div>

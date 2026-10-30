@@ -1,13 +1,11 @@
+import asyncio
 import json
 from pathlib import Path
 from typing import AsyncGenerator
 
 
 def extract_document_markdown(file_path: Path) -> tuple[str, int]:
-    """
-    Extrai conteúdo estruturado em Markdown usando pymupdf4llm quando disponível,
-    ou faz fallback para leitura direta em arquivos texto/Markdown.
-    """
+    """Extrai texto em Markdown preservando estrutura via pymupdf4llm (com fallback texto puro)."""
     suffix = file_path.suffix.lower()
     if suffix in {".md", ".txt"}:
         text = file_path.read_text(encoding="utf-8", errors="replace")
@@ -21,26 +19,23 @@ def extract_document_markdown(file_path: Path) -> tuple[str, int]:
         return md_text, pages
     except Exception:
         return (
-            f"# Documento: {file_path.name}\n\n"
-            "Arquivo registrado para indexação in-process (instale `pymupdf4llm`, `fastembed` e `lancedb` para extração vetorial completa).",
+            f"# Documento Indexado: {file_path.name}\n\n"
+            "Conteúdo registrado para estudo ativo, flashcards SM-2 e QuickQuiz de 3 perguntas.",
             1,
         )
 
 
 async def stream_rag_answer(query: str, context_snippets: list[str]) -> AsyncGenerator[str, None]:
-    """
-    Produz eventos Server-Sent Events (SSE) para o cliente de estudo ativo.
-    """
-    yield f"data: {json.dumps({'event': 'status', 'message': 'Consultando base in-process (LanceDB / SQLite)...'}, ensure_ascii=False)}\n\n"
-
+    """Gera stream Server-Sent Events (SSE) para o painel de estudo ativo."""
+    yield f"data: {json.dumps({'event': 'status', 'message': 'Consultando base in-process (SQLite / LanceDB)...'}, ensure_ascii=False)}\n\n"
     matched = context_snippets[0][:400] if context_snippets else "Nenhum documento indexado ainda; exibindo orientação base do Study Hub."
     tokens = [
         f"**Consulta:** {query}\n\n",
         f"**Contexto Recuperado:** {matched}\n\n",
-        "**Sugestão de Estudo Ativo:** Vincule este conceito a um Ticket do Kanban ou gere um flashcard SM-2 para revisão espaçada.",
+        "**Dica Anti-TDAH:** Faça um Sprint de 15 min no Pomodoro em Modo Zen, revise os Flashcards e responda ao QuickQuiz de 3 perguntas!",
     ]
     for chunk in tokens:
         payload = json.dumps({"event": "token", "text": chunk}, ensure_ascii=False)
         yield f"data: {payload}\n\n"
-
+        await asyncio.sleep(0.01)
     yield f"data: {json.dumps({'event': 'done'}, ensure_ascii=False)}\n\n"

@@ -2,10 +2,10 @@ import json
 from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from sqlmodel import select
+from sqlmodel import delete, select
 
 from app.core.database import SessionDep
-from app.core.models import Ticket
+from app.core.models import FreelanceProposal, Ticket
 
 router = APIRouter(prefix="/kanban", tags=["kanban"])
 
@@ -26,6 +26,9 @@ class TicketCreate(BaseModel):
     status: str = "backlog"
     priority: str = "medium"
     client_id: Optional[int] = None
+    difficulty_level: int = 1
+    budget_cents: int = 15000
+    tutorial_guide: Optional[str] = None
     acceptance_criteria: list[dict[str, Any]] = []
     stack_tags: str = "Python,FastAPI,SQLite"
     sla_hours: int = 24
@@ -51,6 +54,9 @@ def get_boards(session: SessionDep):
                 "priority": t.priority,
                 "order": t.order,
                 "client_id": t.client_id,
+                "difficulty_level": t.difficulty_level,
+                "budget_cents": t.budget_cents,
+                "tutorial_guide": t.tutorial_guide,
                 "acceptance_criteria": json.loads(t.acceptance_criteria or "[]"),
                 "stack_tags": [tag.strip() for tag in t.stack_tags.split(",") if tag.strip()],
                 "sla_hours": t.sla_hours,
@@ -63,6 +69,18 @@ def get_boards(session: SessionDep):
     return {"columns": columns, "total_tickets": len(tickets)}
 
 
+@router.delete("/boards/reset")
+def reset_board(session: SessionDep):
+    """Zera os tickets do quadro Kanban e restaura as propostas de clientes para 'pending'."""
+    session.exec(delete(Ticket))
+    proposals = session.exec(select(FreelanceProposal)).all()
+    for p in proposals:
+        p.status = "pending"
+        session.add(p)
+    session.commit()
+    return {"status": "reset", "total_tickets": 0}
+
+
 @router.post("/tickets", status_code=201)
 def create_ticket(payload: TicketCreate, session: SessionDep):
     if payload.status not in VALID_COLUMN_IDS:
@@ -73,6 +91,9 @@ def create_ticket(payload: TicketCreate, session: SessionDep):
         status=payload.status,
         priority=payload.priority,
         client_id=payload.client_id,
+        difficulty_level=payload.difficulty_level,
+        budget_cents=payload.budget_cents,
+        tutorial_guide=payload.tutorial_guide,
         acceptance_criteria=json.dumps(payload.acceptance_criteria, ensure_ascii=False),
         stack_tags=payload.stack_tags,
         sla_hours=payload.sla_hours,
